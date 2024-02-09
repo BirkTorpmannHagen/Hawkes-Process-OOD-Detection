@@ -23,9 +23,9 @@ transform = transforms.Compose([
     transforms.Normalize((0.1307,), (0.3081,))
 ])
 
-train_dataset = datasets.MNIST(root='./data', train=True, transform=transform, download=True)
-test_dataset = datasets.MNIST(root='./data', train=False, transform=transform, download=True)
-ood_test_dataset = datasets.EMNIST(root='./data', split="letters", train=False, transform=transform, download=True)
+train_dataset = datasets.MNIST(root='../../Datasets/MNIST', train=True, transform=transform, download=True)
+test_dataset = datasets.MNIST(root='../../Datasets/MNIST', train=False, transform=transform, download=True)
+ood_test_dataset = datasets.EMNIST(root='../../Datasets/emnist', split="letters", train=False, transform=transform, download=True)
 
 train_loader = DataLoader(dataset=train_dataset, batch_size=64, shuffle=True)
 test_loader = DataLoader(dataset=test_dataset, batch_size=64, shuffle=False)
@@ -83,7 +83,7 @@ def ood_testing(model, device, test_loader):
             print(target)
             output, spike_trains = model(data)
             spike_trains["labels"] = target
-            store_spike_trains(spike_trains, f"batch_{idx}", Path(__file__).parent / "spike_trains" / "EMINST_convolutional_spike_trains")
+            store_spike_trains(spike_trains, f"batch_{idx}", Path(__file__).parent / "spike_trains" / "convolutional_spike_trains")
             #test_loss += criterion(output, target).item()
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()

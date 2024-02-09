@@ -20,7 +20,7 @@ def plot_heatmap(matrix, label, batch_nr, layer, file_nr, path):
     # If the input is a tensor, convert it to a numpy array
     if not isinstance(matrix, np.ndarray):
         matrix = matrix.numpy()
-    print("here")
+
     plt.figure(figsize=(12, 10))
     sns.heatmap(matrix, annot=True, fmt=".2f", cmap="viridis")
     plt.xlabel("Neuron Index")
@@ -55,12 +55,10 @@ def convert_spike_trains(spike_trains):
 
 def load_in_spikes(path_to_folder, reshape_func, path_to_figures, path_to_store_data):
     data_points = []
-    for file_nr, file in enumerate(os.listdir(path_to_folder)[1:]):
+    for file_nr, file in enumerate(os.listdir(path_to_folder)[1:]): #convolutional spike trains
         convolutional_layer_spikes = concate_neuron_st(torch.load(path_to_folder / file), reshape_func)
-        labels = convolutional_layer_spikes["labels"]
-        del convolutional_layer_spikes["labels"]
         for layer, spikes_per_layer in convolutional_layer_spikes.items():
-            #model = HawkesProcessModel(spikes_per_layer.size()[1]*spikes_per_layer.size()[2], prior_params)
+            print(layer)
             model = HawkesADM4(decay = 1.0)  # You can adjust parameters as needed
             #optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
             for data_index in range(0,spikes_per_layer.size()[0]):
@@ -68,15 +66,10 @@ def load_in_spikes(path_to_folder, reshape_func, path_to_figures, path_to_store_
                 spike_trains = convert_spike_trains(spikes.reshape(-1, spikes.size()[-1]).cpu())
                 model.fit(spike_trains)
                 mu = np.reshape(model.baseline, (spikes_per_layer.size()[1], spikes_per_layer.size()[2]))
-                store_baseline_array(mu, path_to_store_data, f"FileNr: {file_nr} BatchNr:{data_index} Layer:{layer} Class:{labels[data_index]}.npy")
-                print(f"LABEL: {labels[data_index]}")
-                print(f"Mu size: {mu.shape}")               
-                plot_heatmap(mu, labels[data_index], data_index, layer, file_nr, path_to_figures)
-                    
-                print(f"Batchnr{data_index} of {spikes_per_layer.size()[0]}")
-
+                np.save(open(""))
+                #store_baseline_array(mu, path_to_store_data, f"FileNr: {file_nr} BatchNr:{data_index} Layer:{layer} Class:{labels[data_index]}.npy")
+                #plot_heatmap(mu, labels[data_index], data_index, layer, file_nr, path_to_figures)
         data_points.append(convolutional_layer_spikes)
-
     return data_points
 
 def main():

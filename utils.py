@@ -58,4 +58,23 @@ def plot_spike_trains(spike_trains, path_to_fig, title="Spike Trains"):
     ax.set_yticks(range(len(spike_trains)))
     ax.set_yticklabels([f'Neuron {i+1}' for i in range(len(spike_trains))])
     plt.savefig(path_to_fig)
-    
+
+class ArgumentIterator:
+    #add arguments to an iterator for use in parallell processing
+    def __init__(self, iterable, variables):
+        self.iterable = iterable
+        self.index = 0
+        self.variables = variables
+
+    def __next__(self):
+        if self.index >= len(self.iterable):
+            raise StopIteration
+        else:
+            self.index += 1
+            return self.iterable[self.index-1], self.variables
+
+    def __iter__(self):
+        return self
+
+    def __len__(self):
+        return len(self.iterable)

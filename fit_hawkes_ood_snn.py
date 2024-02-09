@@ -76,7 +76,7 @@ def load_in_spikes(path_to_folder, reshape_func, path_to_figures, path_to_store_
     return data_points
 
 def main():
-    path_to_folder = Path(__file__).parent / "spike_trains" / "EMINST_convolutional_spike_trains"
+    path_to_folder = Path(__file__).parent / "spike_trains" / "convolutional_spike_trains"
     path_to_store_data = Path(__file__).parent / "spike_trains" / "baseline_arrays_ood"
     path_to_figures = Path(__file__).parent / "figures" / "baseline_heatmaps_ood"
     dat = load_in_spikes(path_to_folder, neuron_dim_reshape, path_to_figures, path_to_store_data)

@@ -9,7 +9,7 @@ class SurrogateBPFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input):
         ctx.save_for_backward(input)
-        out = torch.zeros_like(input)#.cuda()
+        out = torch.zeros_like(input).cuda()
         out[input > 0] = 1.0
         return out
 
@@ -22,7 +22,7 @@ class SurrogateBPFunction(torch.autograd.Function):
 
 
 def poisson_gen(inp, rescale_fac=2.0):
-    rand_inp = torch.rand_like(inp)#.cuda()
+    rand_inp = torch.rand_like(inp).cuda()
     return torch.mul(torch.le(rand_inp * rescale_fac, torch.abs(inp)).float(), torch.sign(inp))
 
 
@@ -107,17 +107,27 @@ class SResnet(nn.Module):
     def forward(self, inp):
 
         batch_size = inp.size(0)
+        spike_trains = {}
 
-        mem_conv_list = [torch.zeros(batch_size, self.nFilters, self.img_size, self.img_size)#.cuda()
+        # Initialize sizes for spike train tensors
+        current_size = self.img_size
+        for i, layer in enumerate(self.conv_list):
+            if i > 0 and i % 2 == 0:
+                current_size = current_size // 2
+            out_channels = layer.out_channels
+            spike_trains[i] = torch.zeros(batch_size, out_channels, current_size, current_size, self.num_steps).cuda()
+
+        # Initialize memory states for convolutional layers
+        mem_conv_list = [torch.zeros(batch_size, self.nFilters, self.img_size, self.img_size).cuda()
                          ]
 
         for block in range(3):
             for layer in range(2*self.n):
                 mem_conv_list.append(torch.zeros(batch_size, self.nFilters*(2**block), self.img_size // 2**block,
-                                                 self.img_size // 2**block)#.cuda()
+                                                 self.img_size // 2**block).cuda()
                                                  )
 
-        mem_fc = torch.zeros(batch_size, self.num_cls)#.cuda()
+        mem_fc = torch.zeros(batch_size, self.num_cls).cuda()
 
         for t in range(self.num_steps):
             if self.poisson_gen:
@@ -132,6 +142,10 @@ class SResnet(nn.Module):
                 mem_thr = (mem_conv_list[i] / self.conv_list[
                     i].threshold) - 1.0  # Positive values have surpassed the threshold
                 out = self.spike_fn(mem_thr)
+                if t == 0:  # Allocate tensor for spike train at the first timestep based on the actual output size
+                    spike_trains[i] = torch.zeros(batch_size, *out.shape[1:], self.num_steps).cuda()
+
+                spike_trains[i][:, :, :, :, t] = out
 
                 if i>0 and i%2 == 0:  # Add skip conn spikes to the current output spikes
                     if i == 2 + 2 * self.n or i == 2 + 4 * self.n:  # Beggining of block 2 and 3 downsize
@@ -142,7 +156,7 @@ class SResnet(nn.Module):
                 elif i == 0:
                     skip = out.clone()
 
-                rst = torch.zeros_like(mem_conv_list[i])#.cuda()
+                rst = torch.zeros_like(mem_conv_list[i]).cuda()
                 rst[mem_thr > 0] = self.conv_list[i].threshold  # Matrix of 0s with Th in activated cells
                 mem_conv_list[i] = mem_conv_list[i] - rst  # Reset by subtraction
                 out_prev = out.clone()
@@ -161,4 +175,4 @@ class SResnet(nn.Module):
 
         out_voltage = mem_fc / self.num_steps
 
-        return out_voltage
+        return out_voltage, spike_trains
